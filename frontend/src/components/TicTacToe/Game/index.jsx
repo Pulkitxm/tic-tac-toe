@@ -2,36 +2,60 @@ import PropTypes from "prop-types";
 import "./SignlePlayer.css";
 import { useEffect, useRef, useState } from "react";
 import Cell from "./Cell";
+import { io } from "socket.io-client";
 
-const SinglePlayer = ({ username }) => {
+const MultiPlayer = ({ username,opponent,curr }) => {
   const containerRef = useRef(null);
+  const [i, setI] = useState(0)
   const [game, setGame] = useState({
-    curr: "x",
-    board: ["","","","","","","","",""],
+    curr: curr?curr:"x",
+    board: ["", "", "", "", "", "", "", "", ""],
     winner: null,
     turn: 1,
   });
 
-  const makeMove = (index) => {
-    const updatedGame = game;
-    updatedGame.curr=game.curr==="x"?"o":"x";
+  useEffect(() => {
+    const socket = io("http://localhost:3000/");
+    socket.on("next-move", (data) => {
+      if(data.username!==username){
+        const board = data.board;
+        setGame({...game,board,curr:data.curr});
+        console.log(data);
+      }
+    });
+  }, []);
 
-    updatedGame.board = updatedGame.board.map((i,idx)=>{
-      if(idx===index){
+  useEffect(() => {
+    if(i>=3) setTimeout(()=>alert(username+" wins"),100);
+  }, [i]);
+
+  const makeMove = (index, auto = false, curr) => {
+    setI(i+1);
+    const updatedGame = {
+      ...game,
+      curr: game.curr === "x" ? "o" : "x",
+    };
+    if (auto) updatedGame.curr = curr;
+
+    updatedGame.board = game.board.map((i, idx) => {
+      if (idx === index) {
         return game.curr;
-      }else{
+      } else {
         return i;
       }
     });
-    
-    let res = checkWinner();
-    console.log(res);
-    if(!res){
-      makeComputerMove();
-      let res = checkWinner();
-      console.log(res);
-    }
+
     setGame(updatedGame);
+    checkWinner();
+    if (!auto) {
+      checkWinner();
+      const socket = io("http://localhost:3000/");
+      socket.emit("next-move", {
+        board:updatedGame.board,
+        curr: updatedGame.curr,
+        username: username,
+      });
+    }
   };
 
   const evaluate = (board) => {
@@ -66,23 +90,8 @@ const SinglePlayer = ({ username }) => {
 
   const checkWinner = () => {
     const result = evaluate(game.board);
-    if (result !== null) {
-      if (result === 10) {
-        console.log("Computer wins!");
-      } else if (result === -10) {
-        console.log("Player wins!");
-      } else {
-        console.log("It's a draw!");
-      }
-      return true;
-    }
-    return false;
-  };
-
-  const makeComputerMove = () => {
-    const updatedGame = game;
-
-    setGame(updatedGame);
+    console.log(result,game.board);
+    return result !== null;
   };
 
   return (
@@ -97,18 +106,18 @@ const SinglePlayer = ({ username }) => {
       >
         <h1 style={{ display: "inline" }}>{username}</h1>
         <h2 style={{ display: "inline" }}>vs</h2>
-        <h1 style={{ display: "inline" }}>Computer</h1>
+        <h1 style={{ display: "inline" }}>{opponent}</h1>
       </div>
       <div className="container" ref={containerRef}>
-        {Array(9)
-          .fill()
-          .map((_, index) => (
+        {
+        game.board.map((i, index) => (
             <Cell
               key={index}
               index={index}
               game={game}
               setGame={setGame}
               makeMove={makeMove}
+              content={i}
             />
           ))}
       </div>
@@ -116,8 +125,10 @@ const SinglePlayer = ({ username }) => {
   );
 };
 
-SinglePlayer.propTypes = {
+MultiPlayer.propTypes = {
   username: PropTypes.string.isRequired,
+  opponent: PropTypes.string.isRequired,
+  curr: PropTypes.string,
 };
 
-export default SinglePlayer;
+export default MultiPlayer;

@@ -6,19 +6,10 @@ import TicTacToe from "./components/TicTacToe";
 import Loader from "./components/Loader";
 import "./App.css";
 import "./animations.css";
-import io from "socket.io-client";
 
 import { useSelector } from "react-redux";
-import { useEffect } from "react";
 const App = () => {
   const loader = useSelector((state) => state.loader);
-  useEffect(() => {
-    const socket = io("http://localhost:3000/");
-
-    socket.on("new-user", (data) => {
-      console.log(data);
-    });
-  }, []);
   return (
     <Router>
       <div className="app">

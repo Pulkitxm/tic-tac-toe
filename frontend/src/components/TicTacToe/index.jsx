@@ -1,23 +1,20 @@
-import SignlePlayer from "./SignlePlayer";
-import MultiPlayer from "./MultiPlayer";
+import Game from "./Game";
 import { uniqueNamesGenerator, starWars } from "unique-names-generator";
 import { useSelector } from "react-redux";
+import {useNavigate} from "react-router-dom";
+import { useEffect } from "react";
 const TicTacToe = () => {
-  // const [game, setGame] = useState({
-  //   user1: "X",
-  //   user2: "O",
-  // });
+  const opponent = new URLSearchParams(window.location.search).get("opponent");
+  const navigate = useNavigate();
   const newGame = useSelector((state) => state.newGame);
-  const multiplayer = newGame.multiplayer;
   const username = newGame.username;
   const config = {
     dictionaries: [starWars],
   };
-  if(!multiplayer){
-    return <SignlePlayer username={ username && username.length>0 ? username : uniqueNamesGenerator(config) }/>;
-  }else{
-    return <MultiPlayer username={ username && username.length>0 ? username : uniqueNamesGenerator(config) }/>;
-  }
+  useEffect(()=>{
+    if(!opponent) navigate("/");
+  },[]);
+  return <Game opponent={opponent?opponent:""} username={ username && username.length>0 ? username : uniqueNamesGenerator(config) }/>;
 };
 
 export default TicTacToe;

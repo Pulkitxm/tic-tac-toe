@@ -15,11 +15,44 @@ import { useDispatch, useSelector } from "react-redux";
 import { setUsername, setGameMode } from "../../../state/newGame";
 import PropTypes from "prop-types";
 import { hideLoader, showLoader } from "../../../state/loader";
-export default function VerticalLinearStepper({handleClose,setOpen}) {
+import io from "socket.io-client";
+import { CircularProgress } from "@mui/material";
+export default function VerticalLinearStepper({ handleClose, setOpen }) {
   const naigate = useNavigate();
+  const [load, setLoad] = React.useState();
   const [activeStep, setActiveStep] = React.useState(0);
   const newGameState = useSelector((state) => state.newGame);
   const dispatch = useDispatch();
+  const newGame = useSelector((state) => state.newGame);
+  const [fetchedData, setFetchedData] = React.useState(false);
+  React.useEffect(() => {
+    if (!fetchedData) {
+      const socket = io("http://localhost:3000/");
+      if (activeStep === 1) {
+        setLoad(true);
+        socket.emit("want-to-play", {
+          messgae: "i want to play",
+          username: newGame.username,
+        });
+        socket.on("new-user", (data) => {
+          if (data.username !== newGame.username) {
+            setLoad(false);
+            setOpen(false);
+            naigate("/start?opponent=" + data.username);
+            setFetchedData(true);
+            socket.emit("lets-join", {
+              username: newGame.username,
+            });
+          }
+        });
+        socket.on("join-room", (data) => {
+          setLoad(false);
+          setOpen(false);
+          naigate("/start?opponent=" + data.username);
+        });
+      }
+    }
+  }, [activeStep]);
   const changeUsername = (username) => {
     dispatch(setUsername(username));
   };
@@ -98,90 +131,10 @@ export default function VerticalLinearStepper({handleClose,setOpen}) {
           </StepContent>
         </Step>
         <Step key="Choose your game mode">
-          <StepLabel>Choose your game mode</StepLabel>
-          <StepContent>
-            <>
-              <Button
-                variant="contained"
-                sx={{
-                  mr: 1,
-                  backgroundColor: !newGameState.multiplayer
-                    ? "#c6ff00"
-                    : "#546e7a",
-                  "&:hover": {
-                    backgroundColor: !newGameState.multiplayer
-                      ? "#c6ff00"
-                      : "#546e7a",
-                  },
-                  color: !newGameState.multiplayer ? "#000" : "white",
-                }}
-                onClick={() => changeGameMode(false)}
-              >
-                Against Computer
-              </Button>
-              <Button
-                variant="contained"
-                sx={{
-                  mr: 1,
-                  backgroundColor: newGameState.multiplayer
-                    ? "#c6ff00"
-                    : "#546e7a",
-                  "&:hover": {
-                    backgroundColor: newGameState.multiplayer
-                      ? "#c6ff00"
-                      : "#546e7a",
-                  },
-                  color: newGameState.multiplayer ? "#000" : "white",
-                }}
-                onClick={() => changeGameMode(true)}
-              >
-                Multiplayer
-              </Button>
-            </>
-            <Box sx={{ mb: 2 }}>
-              <div>
-                <Button
-                  variant="contained"
-                  onClick={()=>{
-                    if(!newGameState.multiplayer){
-                      handleClose();
-                      setOpen(false);
-                      dispatch(showLoader());
-                      setTimeout(() => {
-                        dispatch(hideLoader());
-                        naigate("/start");
-                      }, 1000);
-                    }else{
-                      console.log("Please select a game mode");
-                    }
-                  }}
-                  sx={{
-                    mt: 1,
-                    mr: 1,
-                    backgroundColor: "green",
-                    "&:hover": {
-                      backgroundColor: "green",
-                    },
-                  }}
-                >
-                  Start
-                </Button>
-                <Button disabled onClick={handleBack} sx={{ mt: 1, mr: 1 }}>
-                  Back
-                </Button>
-              </div>
-            </Box>
-          </StepContent>
+          <StepLabel>{"Let's find you some Online Players"}</StepLabel>
+          <StepContent>{load && <CircularProgress />}</StepContent>
         </Step>
       </Stepper>
-      {activeStep === 2 && (
-        <Paper square elevation={0} sx={{ p: 3 }}>
-          <Typography>All steps completed - you&apos;re finished</Typography>
-          <Button onClick={handleReset} sx={{ mt: 1, mr: 1 }}>
-            Reset
-          </Button>
-        </Paper>
-      )}
     </Box>
   );
 }

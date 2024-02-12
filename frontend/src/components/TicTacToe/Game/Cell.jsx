@@ -1,17 +1,12 @@
 import PropTypes from "prop-types";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-const Cell = ({ game, index, makeMove }) => {
-  const [isDone, setIsDone] = useState(null);
+const Cell = ({ game, index, makeMove,content }) => {
+  const isDone = content;
   const cellRef = useRef();
   useEffect(() => {
     if (isDone) cellRef.current.classList.add("done");
   }, [isDone]);
-  useEffect(() => {
-    if (cellRef.current && cellRef.current.classList.contains("done")) {
-      setIsDone(game.curr);
-    }
-  }, [cellRef.current]);
   const X = () => (
     <div className={"x"}>
       <div className="lines">
@@ -32,7 +27,6 @@ const Cell = ({ game, index, makeMove }) => {
       id={`cell-${index + 1}`}
       onClick={() => {
         if (isDone) return;
-        setIsDone(game.curr);
         makeMove(index);
       }}
       onMouseEnter={() => {}}
@@ -48,6 +42,7 @@ Cell.propTypes = {
   game: PropTypes.object.isRequired,
   setGame: PropTypes.func.isRequired,
   index: PropTypes.number.isRequired,
+  content: PropTypes.string.isRequired,
 };
 
 export default Cell;
